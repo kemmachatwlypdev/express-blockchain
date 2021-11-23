@@ -1,5 +1,5 @@
 const express = require('express');
-const sha256 = require('crypto-js/sha256');
+const sha256 = require('crypto-js/sha256.js');
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -12,9 +12,9 @@ class Block {
         precedingHash = ''
     ) {
         this.index = index;
-        this.index = timestamp;
-        this.index = transaction;
-        this.index = precedingHash;
+        this.timestamp = timestamp;
+        this.transaction = transaction;
+        this.precedingHash = precedingHash;
         this.hash = this.computeHash();
     }
 
@@ -28,7 +28,7 @@ class Block {
     }
 }
 
-class Blockchain {
+class BlockChain {
     constructor() {
         this.id = '';
         this.name = '';
@@ -44,20 +44,20 @@ class Blockchain {
     }
 
     startGenesisblock(genesis) {
-        return new block(
+        return new Block(
             0,
             genesis.date,
             genesis.transaction,
             "0"
-        )
+        );
     }
 
-    obtainLastestBlock() {
+    obtainLatestBlock() {
         return this.blockchain[this.blockchain.length - 1];
     }
 
     addNewBlock(newBlock) {
-        newBlock.precedingHash = this.obtainLastestBlock().hash;
+        newBlock.precedingHash = this.obtainLatestBlock().hash;
         newBlock.hash = newBlock.computeHash();
         this.blockchain.push(newBlock);
     }
@@ -71,15 +71,15 @@ class Blockchain {
                 return false;
             }
 
-            if (currentBlock.precedingHash !== precedingBlock.hash()) {
+            if (currentBlock.precedingHash !== precedingBlock.hash) {
                 return false;
             }
-            return true;
         }
+        return true;
     }
 }
 
-const GlobalChain = new Blockchain();
+const GlobalChain = new BlockChain();
 
 class DeanCoin {
     constructor() {
@@ -88,13 +88,18 @@ class DeanCoin {
 
     validateNewChain = (req, res, next) => {
         if (req.body) {
-            if (req.body.id && req.body.name && req.body.genesis && req.body.genesis.date && req.body.genesis.transaction) {
+            if (req.body.id &&
+                req.body.name &&
+                req.body.genesis &&
+                req.body.genesis.date &&
+                req.body.genesis.transaction
+            ) {
                 next();
             } else {
-                res.status(400).json({ message: 'Request format is not correct! ' })
+                res.status(400).json({ message: 'Request format is not correct!' });
             }
         } else {
-            res.status(400).json({ message: 'Request format is not correct! ' })
+            res.status(400).json({ message: 'Request format is not correct!' });
         }
     }
 
@@ -104,7 +109,7 @@ class DeanCoin {
             req.body.name,
             req.body.genesis,
         )
-        res.status(200).json({ message: 'Chain created!', data: GlobalChain })
+        res.status(200).json({ message: 'Chain created!', data: GlobalChain });
     }
 
     appendNewChild = (req, res) => {
@@ -114,7 +119,7 @@ class DeanCoin {
             req.body.transaction
         )
         GlobalChain.addNewBlock(block);
-        re.status(200).json({ message: 'Block added!' });
+        res.status(200).json({ message: 'Block added!' });
     }
 
     getChain = (req, res) => {
@@ -123,8 +128,9 @@ class DeanCoin {
 }
 
 const Controller = new DeanCoin();
+
 app.get('/', (req, res) => {
-    res.status(200).json({ message: 'Welcome to my Blockchain' });
+    res.status(200).json({ message: 'Welcome to my blockchain' });
 });
 app.post('/api/blockchain', Controller.validateNewChain, Controller.createNewChain);
 app.get('/api/blockchain', Controller.getChain);
